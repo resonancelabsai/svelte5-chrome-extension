@@ -1,0 +1,302 @@
+# Product Requirements Document: ContextMaster Chrome Extension
+
+## Product Overview
+
+### Product Name
+ContextMaster
+
+### Product Description
+ContextMaster is a Chrome extension that enables users to locally store, manage, and quickly access markdown documents containing organizational profiles and AI prompts. Users can effortlessly insert this content into web input fields with a single click, streamlining workflows that require consistent brand messaging or prompt engineering.
+
+### Target Users
+- Individual professionals managing multiple client/organization contexts
+- Marketing teams collaborating on brand materials and messaging
+- Content creators working across multiple projects
+- AI prompt engineers developing and testing prompts
+
+### Product Vision
+To create a seamless, beautiful experience for accessing and using organizational context and prompts across the web, with an emphasis on speed, privacy, and versatility.
+
+## Core Features
+
+### 1. Organization Management
+
+#### Requirements
+- Users can create, edit, and delete organization profiles
+- Users can set a "current organization" that determines which content is readily available
+- Each organization contains structured markdown documents:
+  - Default documents: brand.md, company.md, design.md, communication.md
+  - Custom document types can be added based on user needs
+- Users should be able to view all organizations in a clean, visually appealing list
+
+#### Acceptance Criteria
+- Organization creation requires at minimum a name and one document
+- Switching between organizations is accomplished in ≤2 clicks
+- Organization list should display visual indicators for the current organization
+- Interface supports at least 50 organizations without performance degradation
+
+### 2. Web Integration
+
+#### Requirements
+- Extension icon appears in Chrome toolbar with active/inactive state indicators
+- Smart detection of compatible input fields on web pages (textareas, rich text editors, etc.)
+- Subtle indicator appears next to or within detected input fields
+- Clicking the indicator opens a sleek popup menu with available content
+- Content insertion respects cursor position in the input field
+
+#### Acceptance Criteria
+- Extension detects and marks compatible fields within 500ms of page load
+- Field indicators are visible but non-intrusive
+- Popup menu appears within 100ms of click
+- Content is inserted instantaneously with no perceivable delay
+- Extension works on all major websites including Google Docs, social media platforms, and common CMS systems
+
+### 3. Document Editor
+
+#### Requirements
+- Clean, minimal markdown editor for creating and editing documents
+- Real-time preview of markdown rendering
+- Support for common markdown features (headers, lists, links, code blocks, etc.)
+- Auto-save functionality
+- Document categorization by organization
+
+#### Acceptance Criteria
+- Editor loads within 200ms of document selection
+- Markdown preview updates within 50ms of content changes
+- All edits are saved locally within 1 second of change
+- Editing interface matches the premium, Apple-like aesthetic of the extension
+
+### 4. Prompt Library
+
+#### Requirements
+- Prompt templates organized by categories (e.g., Marketing, Technical, Creative)
+- Ability to create, edit, and delete prompts
+- Association of prompts with specific organizations or global availability
+- Search and filtering capabilities
+
+#### Acceptance Criteria
+- Library supports at least 200 prompts without performance issues
+- Categories can be customized and nested up to 3 levels deep
+- Search returns results within 100ms as user types
+- Each prompt displays preview text and metadata
+
+### 5. Text Selection and Capture
+
+#### Requirements
+- Users can select text on any webpage
+- Context menu or keyboard shortcut activates capture functionality
+- Popup interface allows user to:
+  - Create new document (preselected option)
+  - Add to existing document (via dropdown)
+  - Save as prompt template (with category selection)
+- Capture includes source URL metadata automatically
+
+#### Acceptance Criteria
+- Capture interface appears within 150ms of activation
+- Selected text is preserved with formatting when possible
+- All save options are accessible within 2 clicks
+- Confirmation feedback after successful capture
+
+### 6. Local-First Storage with Version Control
+
+#### Requirements
+- All data stored locally on user's device
+- Git-like version control system for all document changes
+- Commit history with timestamps
+- Ability to view and restore previous versions
+- Data structure designed for future syncing capabilities
+
+#### Acceptance Criteria
+- Document changes are tracked automatically without user intervention
+- Version history UI shows changes in a clear, visual timeline
+- Restoring previous versions takes ≤2 clicks
+- Storage mechanism is compatible with future cross-device sync features
+- Version control does not impact performance
+
+## Technical Requirements
+
+### Tech Stack
+- **Frontend Framework**: Svelte 5 with its new reactive primitives
+- **Build System**: Vite for fast development and optimized production builds
+- **CSS Framework**: Tailwind CSS for utility-first styling
+- **UI Components**: shadcn-svelte for high-quality, accessible components
+- **Extension Boilerplate**: Based on [trentbrew/svelte5-chrome-extension](https://github.com/trentbrew/svelte5-chrome-extension)
+
+### Storage
+- IndexedDB for primary data storage through a Svelte-friendly wrapper
+- Structured JSON format for organization and document metadata
+- Compressed storage for optimized performance
+- Data export/import functionality for backup
+
+### Security & Privacy
+- All data stored locally by default; no server communication required
+- Optional encryption for sensitive organizational data
+- Clear privacy policy explaining data handling
+- Zero analytics in the free version (minimal, opt-in analytics for paid version)
+
+### Performance
+- Extension loads in ≤1 second
+- All interactions have ≤100ms response time
+- Memory usage ≤50MB during regular operation
+- CPU usage ≤5% during active use
+- Leverages Svelte's compile-time optimizations for minimal runtime footprint
+
+### Compatibility
+- Chrome versions 90+
+- Support for Chromium-based browsers (Edge, Brave, etc.)
+- Design patterns compatible with future Safari extension
+
+## User Interface
+
+### Design Philosophy
+- Clean, minimalist Apple-like aesthetic implemented with Tailwind CSS
+- High contrast, accessible components powered by shadcn-svelte
+- Subtle animations for state changes using Svelte transitions
+- Consistent visual language throughout all interfaces
+- Design system built on Tailwind's configuration for maintainable theming
+
+### Extension Popup
+- Compact main popup with:
+  - Current organization selector
+  - Quick access to recent documents
+  - Search bar for all content
+  - Settings button
+- Smooth transitions between popup states
+
+### Document Management Interface
+- Grid/list toggle view for organizations
+- Card-based document preview
+- Drag-and-drop organization of documents and prompts
+- Visual differentiation between document types
+
+### Field Indicator
+- Subtle, non-intrusive icon or highlight
+- Consistent positioning relative to input fields
+- Clear visual feedback on hover/interaction
+
+## User Flows
+
+### Adding a New Organization
+1. User clicks extension icon in toolbar
+2. Selects "Add Organization" button
+3. Enters organization name
+4. System creates default document templates
+5. User edits documents with organizational content
+6. Saves and sets as current organization (optional)
+
+### Inserting Content into Web Form
+1. User navigates to website with form
+2. Extension automatically detects compatible input fields
+3. User clicks field indicator next to desired input
+4. Popup displays available content for current organization
+5. User selects desired document or prompt
+6. Content is instantly inserted at cursor position
+
+### Capturing Web Content
+1. User selects text on webpage
+2. Activates capture via context menu or keyboard shortcut
+3. Popup appears with "New Document" preselected
+4. User can choose:
+   - Target organization
+   - Document type (existing or new)
+   - Prompt category (if saving as prompt)
+5. Clicks "Save" to complete capture
+6. Receives visual confirmation of successful save
+
+## Premium Features (Paid Version)
+
+### Team Collaboration
+- Shared organization repositories
+- User roles and permissions
+- Comment and suggestion functionality
+- Change notifications
+
+### Cloud Sync
+- Cross-device synchronization
+- Conflict resolution
+- Real-time collaborative editing
+- Backup and restore
+
+### Advanced Analytics
+- Content usage statistics
+- Team activity reports
+- Performance insights
+
+## Development Roadmap
+
+### Phase 1: MVP (3 months)
+- Set up Svelte 5 / Vite / Tailwind / shadcn-svelte development environment
+- Core extension functionality using Svelte components
+- Organization and document management
+- Web input field integration
+- Local storage with basic version tracking
+- Essential UI components built with shadcn-svelte
+
+### Phase 2: Enhanced Features (2 months)
+- Prompt library implementation
+- Advanced version control
+- Text capture functionality
+- UI refinements and performance optimizations
+
+### Phase 3: Premium Features (4 months)
+- Team collaboration features
+- Cloud sync implementation
+- Analytics dashboard
+- Native application development for macOS
+
+### Phase 4: Ecosystem Expansion (6 months)
+- iOS application
+- Additional browser support
+- API integrations with common tools
+- Advanced AI features
+
+## Success Metrics
+
+### User Adoption
+- Weekly active users
+- Organization creation rate
+- Document creation and edit frequency
+
+### Performance
+- Average interaction speed
+- Error rate
+- Storage efficiency
+
+### User Satisfaction
+- Feature usage patterns
+- Retention rate
+- User feedback and ratings
+
+## Appendix
+
+### Technical Architecture Diagram
+[Include diagram showing Svelte 5 component architecture, local storage, version control system, and future sync capabilities]
+
+### Tech Stack Details
+
+#### Svelte 5
+- Utilizing Svelte 5's reactive primitives ($state, $derived, etc.)
+- Component-based architecture for popup, options, and content scripts
+- Leveraging Svelte's compile-time approach for minimal runtime footprint
+
+#### Vite
+- Fast development server with HMR (Hot Module Replacement)
+- Optimized production builds with code-splitting
+- Plugin-based extension for Chrome manifest V3 compatibility
+
+#### Tailwind CSS
+- Utility-first approach for consistent styling
+- Custom theme configuration matching Apple-like aesthetic
+- JIT (Just-In-Time) compiler for minimal CSS bundle size
+
+#### shadcn-svelte
+- Accessible, customizable component library
+- Integrated with Tailwind for consistent styling
+- Components for common UI patterns (dropdowns, modals, forms)
+
+### Competitive Analysis
+- Similar products: [Competitor 1], [Competitor 2]
+- Differentiating factors: Local-first approach, version control, organization-centric design, modern Svelte-based architecture
+
+### User Research Summary
+[Include summary of user interviews and pain points addressed by this product]
