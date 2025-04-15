@@ -7,6 +7,7 @@ export interface MenuItem {
 export interface Organization {
   id: string;
   name: string;
+  description: string;
   createdAt: number;
   updatedAt: number;
   documents: Document[];
@@ -34,6 +35,8 @@ export interface DocumentVersion {
 
 export type DocumentType = 'brand' | 'company' | 'design' | 'communication' | 'custom';
 
+export type Theme = 'light' | 'dark' | 'system';
+
 export interface Prompt {
   id: string;
   organizationId?: string; // If undefined, it's a global prompt
@@ -53,7 +56,7 @@ export interface PromptCategory {
 }
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
+  theme: Theme;
   defaultOrganizationId?: string;
   defaultDocumentType?: DocumentType;
   keyboardShortcuts: Record<string, string>;

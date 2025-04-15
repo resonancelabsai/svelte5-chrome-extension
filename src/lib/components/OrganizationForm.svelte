@@ -1,10 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { Organization } from '$lib/types';
-  import Input from '$lib/components/ui/input/input.svelte';
-  import Label from '$lib/components/ui/label/label.svelte';
+  import type { Organization } from '$lib/types/index';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
   import { Button } from '$lib/components/ui/button';
-  import * as Form from '$lib/components/ui/form';
 
   const { organization = undefined } = $props<{
     organization?: Organization;
@@ -70,7 +69,7 @@
   );
 
   // Handle form submission
-  function handleSubmit(event: SubmitEvent) {
+  function handleSubmit(event: Event) {
     event.preventDefault();
     
     // Validate all fields
@@ -109,7 +108,7 @@
     {organization ? 'Edit' : 'New'} Organization
   </h2>
 
-  <form onsubmit={handleSubmit} class="space-y-4">
+  <form on:submit|preventDefault={handleSubmit} class="space-y-4">
     <div class="space-y-2">
       <Label for="name">Name</Label>
       <Input 

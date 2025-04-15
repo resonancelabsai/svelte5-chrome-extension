@@ -1,5 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { Organization, Document, DocumentType } from '$lib/types';
+import type { Organization, Document, DocumentType } from '$lib/types/index';
+import { 
+  loadOrganizations, 
+  saveOrganizations, 
+  loadCurrentOrganizationId, 
+  saveCurrentOrganizationId,
+  migrateFromLocalStorage,
+  isIndexedDBSupported
+} from '$lib/services/db.service';
 
 // Current organization ID
 let currentOrganizationId = $state<string | null>(null);
@@ -14,6 +22,10 @@ export function getCurrentOrganizationId() {
 
 export function setCurrentOrganizationId(id: string | null) {
   currentOrganizationId = id;
+  // Persist the change asynchronously
+  saveCurrentOrganizationId(id).catch(err => {
+    console.error('Failed to persist current organization ID:', err);
+  });
 }
 
 export function getOrganizations() {
@@ -70,13 +82,14 @@ export function getCurrentOrganization() {
 }
 
 // Create a new organization
-export function createOrganization(name: string) {
+export function createOrganization(name: string, description: string = `Organization for ${name}`) {
   const id = uuidv4();
   const now = Date.now();
   
   const newOrg: Organization = {
     id,
     name,
+    description,
     createdAt: now,
     updatedAt: now,
     documents: getSampleDocuments(id)
@@ -89,6 +102,9 @@ export function createOrganization(name: string) {
     currentOrganizationId = id;
   }
   
+  // Save changes immediately
+  saveToDatabase();
+  
   return newOrg;
 }
 
@@ -100,6 +116,9 @@ export function updateOrganization(id: string, updates: Partial<Organization>) {
     }
     return org;
   });
+  
+  // Save changes immediately
+  saveToDatabase();
 }
 
 // Delete an organization
@@ -110,12 +129,22 @@ export function deleteOrganization(id: string) {
   if (currentOrganizationId === id) {
     currentOrganizationId = organizations.length > 0 ? organizations[0].id : null;
   }
+  
+  // Save changes immediately
+  saveToDatabase();
 }
 
 // Set current organization
 export function setCurrentOrganization(id: string) {
   if (organizations.some(org => org.id === id)) {
     currentOrganizationId = id;
+    
+    // Save changes immediately
+    saveToDatabase();
+    saveCurrentOrganizationId(id).catch(err => {
+      console.error('Failed to persist current organization ID:', err);
+    });
+    
     return true;
   }
   return false;
@@ -142,6 +171,8 @@ export function addDocument(organizationId: string, name: string, type: Document
     updatedAt: now
   });
   
+  // Note: updateOrganization already saves to database
+  
   return newDoc;
 }
 
@@ -165,6 +196,9 @@ export function updateDocument(documentId: string, updates: Partial<Document>) {
     return org;
   });
   
+  // Save changes immediately
+  saveToDatabase();
+  
   return updatedDoc;
 }
 
@@ -183,6 +217,9 @@ export function deleteDocument(documentId: string) {
     
     return org;
   });
+  
+  // Save changes immediately
+  saveToDatabase();
 }
 
 // Create a version for a document
@@ -222,30 +259,74 @@ export function createDocumentVersion(documentId: string, content: string, comme
     return org;
   });
   
+  // Save changes immediately
+  saveToDatabase();
+  
   return updatedDoc;
 }
 
 // Initialize with sample data in development
 export function initializeWithSampleData() {
   if (organizations.length === 0) {
-    createOrganization('Acme Corporation');
-    createOrganization('Personal Projects');
+    createOrganization('Acme Corporation', 'A fictional corporation for demonstration purposes');
+    createOrganization('Personal Projects', 'Your personal projects and documents');
   }
 }
 
-// Save organizations to local storage
-export function saveToLocalStorage() {
+// Save organizations to database with retry capability
+export function saveToDatabase(retryCount = 0) {
   try {
-    localStorage.setItem('contextmaster-organizations', JSON.stringify(organizations));
-    localStorage.setItem('contextmaster-current-org', currentOrganizationId || '');
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 500; // ms
+    
+    saveOrganizations(organizations).catch(err => {
+      console.error('Error saving to IndexedDB:', err);
+      
+      // Retry logic with exponential backoff
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Retrying save (attempt ${retryCount + 1} of ${MAX_RETRIES})...`);
+        setTimeout(() => {
+          saveToDatabase(retryCount + 1);
+        }, RETRY_DELAY * Math.pow(2, retryCount));
+        return;
+      }
+      
+      // Fallback to localStorage if all retries failed or IndexedDB isn't supported
+      console.warn('Falling back to localStorage for data persistence');
+      if (isIndexedDBSupported()) {
+        localStorage.setItem('contextmaster-organizations', JSON.stringify(organizations));
+        localStorage.setItem('contextmaster-current-org', currentOrganizationId || '');
+      }
+    });
   } catch (error) {
-    console.error('Error saving to localStorage:', error);
+    console.error('Error initiating save operation:', error);
   }
 }
 
-// Load organizations from local storage
-export function loadFromLocalStorage() {
+// Load organizations from database
+export async function loadFromDatabase() {
   try {
+    // Try loading from IndexedDB first
+    if (isIndexedDBSupported()) {
+      // Migrate data from localStorage to IndexedDB if needed (one-time operation)
+      await migrateFromLocalStorage();
+      
+      // Load organizations from IndexedDB
+      const orgs = await loadOrganizations();
+      if (orgs && orgs.length > 0) {
+        organizations = orgs;
+      }
+      
+      // Load current organization ID
+      const currentOrgId = await loadCurrentOrganizationId();
+      if (currentOrgId) {
+        currentOrganizationId = currentOrgId;
+      }
+      
+      return;
+    }
+    
+    // Fallback to localStorage if IndexedDB is not supported
     const orgsData = localStorage.getItem('contextmaster-organizations');
     const currentOrgId = localStorage.getItem('contextmaster-current-org');
     
@@ -257,20 +338,28 @@ export function loadFromLocalStorage() {
       currentOrganizationId = currentOrgId;
     }
   } catch (error) {
-    console.error('Error loading from localStorage:', error);
+    console.error('Error loading from database:', error);
   }
 }
 
 // Initialize the store
-export function initializeOrganizationStore() {
-  loadFromLocalStorage();
+export async function initializeOrganizationStore() {
+  await loadFromDatabase();
   
   if (organizations.length === 0) {
     initializeWithSampleData();
   }
   
-  // Save to localStorage whenever organizations change
-  $effect(() => {
-    saveToLocalStorage();
-  });
+  // Set up a manual watcher for the organizations store
+  // This avoids using $effect outside of component context
+  const originalOrganizations = [...organizations];
+  
+  // Return functions to manage the store
+  return {
+    // Function to check if organizations have changed and save if needed
+    checkAndSave: () => {
+      // We can't use deep comparison easily, so we'll just save whenever this is called
+      saveToDatabase();
+    }
+  };
 } 

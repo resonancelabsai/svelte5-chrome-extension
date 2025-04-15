@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { theme, toggleTheme } from "../stores/theme";
+  import { theme, toggleTheme } from "$lib/stores/theme";
 </script>
 
 <button class="btn btn-circle" onclick={toggleTheme}>

@@ -3,16 +3,22 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
   import { getCurrentOrganization, deleteDocument } from '$lib/stores/organization.svelte.js';
-  import type { Document } from '$lib/types';
+  import type { Document } from '$lib/types/index';
   import FileText from "@lucide/svelte/icons/file-text";
   import Edit from "@lucide/svelte/icons/edit";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import { createEventDispatcher } from 'svelte';
+  import { Input } from '$lib/components/ui/input';
+  import { formatDate } from '$lib/utils/formatters';
 
   const dispatch = createEventDispatcher<{
     edit: { document: Document };
     add: void;
   }>();
+
+  // Search functionality
+  let searchQuery = $state('');
+  let searchResults = $derived(getFilteredDocuments());
 
   function handleEdit(doc: Document) {
     dispatch('edit', { document: doc });
@@ -22,10 +28,23 @@
     dispatch('add');
   }
 
-  function handleDelete(docId: string) {
-    if (confirm('Are you sure you want to delete this document?')) {
-      deleteDocument(docId);
+  function handleDelete(doc: Document) {
+    if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
+      deleteDocument(doc.id);
     }
+  }
+
+  function getFilteredDocuments(): Document[] {
+    if (!searchQuery.trim() || !documents.length) {
+      return documents;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return documents.filter(doc => 
+      doc.name.toLowerCase().includes(query) || 
+      doc.content.toLowerCase().includes(query) ||
+      doc.type.toLowerCase().includes(query)
+    );
   }
 
   const currentOrg = $derived(getCurrentOrganization());
@@ -46,6 +65,17 @@
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   }
+
+  function getDocumentTypeEmoji(type: string): string {
+    switch (type) {
+      case 'brand': return '🎨';
+      case 'company': return '🏢';
+      case 'design': return '✏️';
+      case 'communication': return '📣';
+      case 'custom': return '📄';
+      default: return '📄';
+    }
+  }
 </script>
 
 <div class="p-4 space-y-4">
@@ -54,6 +84,23 @@
     <Button variant="default" size="sm" onclick={handleAdd} disabled={!currentOrg}>
       Add Document
     </Button>
+  </div>
+
+  <div class="relative">
+    <Input
+      type="text"
+      placeholder="Search documents by name or content..."
+      bind:value={searchQuery}
+      class="w-full"
+    />
+    {#if searchQuery}
+      <button 
+        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+        onclick={() => searchQuery = ''}
+      >
+        ✕
+      </button>
+    {/if}
   </div>
 
   {#if !currentOrg}
@@ -65,15 +112,19 @@
       <p class="text-muted-foreground">No documents yet</p>
       <p class="text-muted-foreground text-sm mt-2">Click "Add Document" to create your first document</p>
     </div>
+  {:else if searchResults.length === 0}
+    <div class="p-4 text-center text-muted-foreground">
+      <p>No documents match your search query.</p>
+    </div>
   {:else}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {#each documents as doc}
+      {#each searchResults as doc}
         <Card>
           <CardHeader>
             <div class="flex items-center justify-between">
               <div>
                 <CardTitle class="flex items-center gap-2">
-                  <FileText class="h-4 w-4" />
+                  <span class="text-lg">{getDocumentTypeEmoji(doc.type)}</span>
                   <span>{doc.name}</span>
                 </CardTitle>
                 <CardDescription>
@@ -86,7 +137,7 @@
                 <Button variant="ghost" size="icon" onclick={() => handleEdit(doc)}>
                   <Edit class="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onclick={() => handleDelete(doc.id)}>
+                <Button variant="ghost" size="icon" onclick={() => handleDelete(doc)}>
                   <Trash2 class="h-4 w-4" />
                 </Button>
               </div>

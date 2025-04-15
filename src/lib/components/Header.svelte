@@ -59,12 +59,12 @@
       <DropdownMenuContent align="end">
         {#each organizations as org}
           <DropdownMenuItem 
-            onclick={() => handleChangeOrg(org.id)}
+            on:click={() => handleChangeOrg(org.id)}
           >
             <span class:font-bold={org.id === currentOrgId}>{org.name}</span>
           </DropdownMenuItem>
         {/each}
-        <DropdownMenuItem onclick={handleNewOrg}>
+        <DropdownMenuItem on:click={handleNewOrg}>
           <div class="flex items-center gap-1 text-primary">
             <Plus class="h-4 w-4" />
             <span>New Organization</span>
